@@ -1,59 +1,62 @@
-[![progress-banner](https://backend.codecrafters.io/progress/git/aae72b83-411b-4afb-a754-3960c1baab2d)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# Write Lee's OWN Git
 
-This is a starting point for Go solutions to the
-["Build Your Own Git" Challenge](https://codecrafters.io/challenges/git).
+A from-scratch implementation of Git written in Go, built as I work through the
+[CodeCrafters "Build Your Own Git"](https://codecrafters.io/challenges/git)
+challenge. The goal is to understand how Git actually works under the hood — the
+`.git` directory layout, content-addressable object storage, zlib compression,
+and Git's transfer protocols — by reimplementing the plumbing commands myself.
 
-In this challenge, you'll build a small Git implementation that's capable of
-initializing a repository, creating commits and cloning a public repository.
-Along the way we'll learn about the `.git` directory, Git objects (blobs,
-commits, trees etc.), Git's transfer protocols and more.
+## Implemented commands
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+| Command            | Description                                                            |
+| ------------------ | --------------------------------------------------------------------- |
+| `init`             | Initializes a new repository (`.git/`, `.git/objects`, `.git/refs`, `HEAD`). |
+| `cat-file -p <sha>`| Reads a Git object: locates it in `.git/objects`, zlib-decompresses it, strips the header, and prints the content. |
 
-# Passing the first stage
+More commands (hashing objects, writing trees, creating commits, and cloning a
+public repository) are on the way as I progress through the challenge.
 
-The entry point for your Git implementation is in `app/main.go`. Study and
-uncomment the relevant code, and then run the command below to execute the tests
-on our servers:
+## How it works
+
+Git stores every object (blob, tree, commit) under
+`.git/objects/<first 2 chars of sha>/<remaining 38 chars>`. Each object is
+zlib-compressed and prefixed with a header of the form `"<type> <size>\0"`
+before the raw content. This implementation:
+
+1. Splits the 40-character SHA-1 hash into a 2-char directory and a 38-char filename.
+2. Opens the object file and wraps it in a `zlib` reader to decompress it.
+3. Splits on the first null byte to separate the header from the payload, then
+   returns the payload.
+
+## Building and running
+
+Requires Go 1.26+.
 
 ```sh
-codecrafters submit
+# Build
+go build -o mygit ./app
+
+# Initialize a repository
+./mygit init
+
+# Print the contents of an object
+./mygit cat-file -p <40-char-sha>
 ```
 
-That's all!
-
-# Stage 2 & beyond
-
-Note: This section is for stages 2 and beyond.
-
-1. Ensure you have `go (1.26)` installed locally
-1. Run `./your_program.sh` to run your Git implementation, which is implemented
-   in `app/main.go`.
-1. Run `codecrafters submit` to submit your solution to CodeCrafters. Test
-   output will be streamed to your terminal.
-
-# Testing locally
-
-The `your_program.sh` script is expected to operate on the `.git` folder inside
-the current working directory. If you're running this inside the root of this
-repository, you might end up accidentally damaging your repository's `.git`
-folder.
-
-We suggest executing `your_program.sh` in a different folder when testing
-locally. For example:
+> **Tip:** run this in a throwaway directory (e.g. `/tmp/testing`) so you don't
+> touch the real `.git` folder of this repo.
 
 ```sh
 mkdir -p /tmp/testing && cd /tmp/testing
-/path/to/your/repo/your_program.sh init
+/path/to/this/repo/your_program.sh init
 ```
 
-To make this easier to type out, you could add a
-[shell alias](https://shapeshed.com/unix-alias/):
+## Project layout
 
-```sh
-alias mygit=/path/to/your/repo/your_program.sh
+- `app/main.go` — the entire implementation (command dispatch + object reading).
+- `your_program.sh` — build-and-run wrapper used both locally and by the CodeCrafters test runner.
+- `codecrafters.yml`, `.codecrafters/` — CodeCrafters challenge scaffolding (test harness configuration). Left in place so the challenge tests keep running; not part of the Git implementation itself.
 
-mkdir -p /tmp/testing && cd /tmp/testing
-mygit init
-```
+## License
+
+[MIT](./LICENSE)
