@@ -48,7 +48,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error reading file: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Println(content)
+		fmt.Print(string(content))
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command %s\n", command)
 		os.Exit(1)
